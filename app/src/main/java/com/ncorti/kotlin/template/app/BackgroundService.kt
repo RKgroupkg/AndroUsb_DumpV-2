@@ -11,12 +11,10 @@ import android.os.Build
 import android.os.Environment
 import android.os.IBinder
 import android.util.Log
-import java.io.*
+import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
-import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
 
 class BackgroundService : Service() {
     private lateinit var usbManager: UsbManager
