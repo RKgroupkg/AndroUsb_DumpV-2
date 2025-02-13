@@ -1,3 +1,5 @@
+package com.ncorti.kotlin.template.app
+
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -29,9 +31,6 @@ class MainActivity : AppCompatActivity() {
         // Initialize permission handler
         permissionHandler = PermissionHandler(this)
 
-        // Check device compatibility
-        checkDeviceCompatibility()
-
         // Set up permission button
         grantPermissionButton.setOnClickListener {
             checkAndRequestPermissions()
@@ -41,28 +40,8 @@ class MainActivity : AppCompatActivity() {
         checkAndRequestPermissions()
     }
 
-    private fun checkDeviceCompatibility() {
-        val compatibility = SmartBoardCompatibility.checkDeviceCompatibility(this)
-        if (!compatibility.isCompatible) {
-            AlertDialog.Builder(this)
-                .setTitle("Device Compatibility Check")
-                .setMessage(
-                    "Some features may not work on this device:\n\n" +
-                    compatibility.getIncompatibilityReasons().joinToString("\n")
-                )
-                .setPositiveButton("Continue Anyway") { _, _ ->
-                    checkAndRequestPermissions()
-                }
-                .setNegativeButton("Exit") { _, _ ->
-                    finish()
-                }
-                .setCancelable(false)
-                .show()
-        }
-    }
-
     private fun checkAndRequestPermissions() {
-        statusText.text = "Checking permissions..."
+        statusText.text = getString(R.string.checking_permissions)
         grantPermissionButton.visibility = View.GONE
 
         permissionHandler.checkAndRequestPermissions { granted ->
@@ -79,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onPermissionsGranted() {
-        statusText.text = "USB Backup Service is active and monitoring for USB devices"
+        statusText.text = getString(R.string.service_running)
         grantPermissionButton.visibility = View.GONE
         
         if (!serviceStarted) {
@@ -90,18 +69,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPermissionRationaleDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Permissions Required")
-            .setMessage(
-                "This app needs storage permissions to:\n\n" +
-                "• Detect USB devices\n" +
-                "• Access files on USB devices\n" +
-                "• Create backup copies\n\n" +
-                "Without these permissions, the app cannot perform backups."
-            )
-            .setPositiveButton("Grant Permissions") { _, _ ->
+            .setTitle(getString(R.string.permissions_required))
+            .setMessage(getString(R.string.permission_rationale_message))
+            .setPositiveButton(getString(R.string.grant_permissions)) { _, _ ->
                 checkAndRequestPermissions()
             }
-            .setNegativeButton("Cancel") { _, _ ->
+            .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 showPermissionDeniedMessage()
             }
             .setCancelable(false)
@@ -109,17 +82,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showPermissionDeniedMessage() {
-        statusText.text = "⚠️ Required permissions not granted"
+        statusText.text = getString(R.string.permissions_denied)
         grantPermissionButton.apply {
             visibility = View.VISIBLE
-            text = "Grant Permissions"
+            text = getString(R.string.grant_permissions)
         }
 
         Snackbar.make(
             rootView,
-            "Storage permissions are required for USB backup",
+            getString(R.string.storage_permission_required),
             Snackbar.LENGTH_LONG
-        ).setAction("Settings") {
+        ).setAction(getString(R.string.settings)) {
             openAppSettings()
         }.show()
     }
@@ -133,12 +106,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun startBackgroundService() {
         val serviceIntent = Intent(this, BackgroundService::class.java)
-        startForegroundService(serviceIntent)
+        startService(serviceIntent)
     }
 
     override fun onResume() {
         super.onResume()
-        // Recheck permissions when returning to the app
         if (!serviceStarted) {
             checkAndRequestPermissions()
         }
