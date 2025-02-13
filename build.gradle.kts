@@ -1,38 +1,25 @@
-import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    val kotlinVersion by extra("1.9.0")
+    val agpVersion by extra("8.0.2")
 
-plugins {
-    // Access version catalog
-    val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
-    
-    id("io.gitlab.arturbosch.detekt").version(libs.findVersion("detekt").get().toString())
-    id("com.github.ben-manes.versions").version(libs.findVersion("benmanesversion").get().toString())
-    id("org.jetbrains.kotlin.plugin.compose").version(libs.findVersion("kotlin").get().toString())
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:$agpVersion")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    }
 }
 
 allprojects {
-    group = PUBLISHING_GROUP
-}
-
-val detektFormatting = libs.detekt.formatting
-
-subprojects {
-    apply {
-        plugin("io.gitlab.arturbosch.detekt")
-    }
-
-    detekt {
-        config.from(rootProject.files("config/detekt/detekt.yml"))
-    }
-
-    dependencies {
-        detektPlugins(detektFormatting)
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 
-tasks {
-    withType<DependencyUpdatesTask>().configureEach {
-        rejectVersionIf {
-            candidate.version.isStableVersion().not()
-        }
-    }
+tasks.register("clean", Delete::class) {
+    delete(rootProject.buildDir)
 }
