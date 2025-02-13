@@ -15,8 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AndroUsb_DumpV-2"
-
-// Only enable TYPESAFE_PROJECT_ACCESSORS, remove VERSION_CATALOGS
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
 include(":app")
