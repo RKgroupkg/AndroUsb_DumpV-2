@@ -15,7 +15,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "kotlin-android-template"
 
+// Enable required feature previews
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+enableFeaturePreview("VERSION_CATALOGS")
 
 include(
     "app",
