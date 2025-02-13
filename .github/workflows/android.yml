@@ -22,6 +22,9 @@ jobs:
         distribution: 'temurin'
         java-version: 17
 
+    - name: Verify Gradle Wrapper
+      run: ls -l gradlew
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
