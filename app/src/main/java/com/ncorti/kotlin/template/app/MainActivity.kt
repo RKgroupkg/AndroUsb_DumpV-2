@@ -1,4 +1,5 @@
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -14,25 +15,56 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rootView: View
     private lateinit var statusText: TextView
     private lateinit var grantPermissionButton: Button
+    private var serviceStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Initialize views
         rootView = findViewById(R.id.root_view)
         statusText = findViewById(R.id.status_text)
         grantPermissionButton = findViewById(R.id.grant_permission_button)
 
+        // Initialize permission handler
         permissionHandler = PermissionHandler(this)
-        
+
+        // Check device compatibility
+        checkDeviceCompatibility()
+
+        // Set up permission button
         grantPermissionButton.setOnClickListener {
             checkAndRequestPermissions()
         }
 
+        // Initial permission check
         checkAndRequestPermissions()
     }
 
+    private fun checkDeviceCompatibility() {
+        val compatibility = SmartBoardCompatibility.checkDeviceCompatibility(this)
+        if (!compatibility.isCompatible) {
+            AlertDialog.Builder(this)
+                .setTitle("Device Compatibility Check")
+                .setMessage(
+                    "Some features may not work on this device:\n\n" +
+                    compatibility.getIncompatibilityReasons().joinToString("\n")
+                )
+                .setPositiveButton("Continue Anyway") { _, _ ->
+                    checkAndRequestPermissions()
+                }
+                .setNegativeButton("Exit") { _, _ ->
+                    finish()
+                }
+                .setCancelable(false)
+                .show()
+        }
+    }
+
     private fun checkAndRequestPermissions() {
+        statusText.text = "Checking permissions..."
+        grantPermissionButton.visibility = View.GONE
+
         permissionHandler.checkAndRequestPermissions { granted ->
             if (granted) {
                 onPermissionsGranted()
@@ -47,17 +79,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onPermissionsGranted() {
-        statusText.text = "Permissions granted. USB backup service is running."
+        statusText.text = "USB Backup Service is active and monitoring for USB devices"
         grantPermissionButton.visibility = View.GONE
-        startBackgroundService()
+        
+        if (!serviceStarted) {
+            startBackgroundService()
+            serviceStarted = true
+        }
     }
 
     private fun showPermissionRationaleDialog() {
         AlertDialog.Builder(this)
             .setTitle("Permissions Required")
             .setMessage(
-                "This app needs access to storage to backup files from USB devices. " +
-                "Without these permissions, the app cannot function properly."
+                "This app needs storage permissions to:\n\n" +
+                "• Detect USB devices\n" +
+                "• Access files on USB devices\n" +
+                "• Create backup copies\n\n" +
+                "Without these permissions, the app cannot perform backups."
             )
             .setPositiveButton("Grant Permissions") { _, _ ->
                 checkAndRequestPermissions()
@@ -65,16 +104,20 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancel") { _, _ ->
                 showPermissionDeniedMessage()
             }
+            .setCancelable(false)
             .show()
     }
 
     private fun showPermissionDeniedMessage() {
-        statusText.text = "Required permissions not granted. App functionality is limited."
-        grantPermissionButton.visibility = View.VISIBLE
-        
+        statusText.text = "⚠️ Required permissions not granted"
+        grantPermissionButton.apply {
+            visibility = View.VISIBLE
+            text = "Grant Permissions"
+        }
+
         Snackbar.make(
             rootView,
-            "Please grant required permissions in Settings",
+            "Storage permissions are required for USB backup",
             Snackbar.LENGTH_LONG
         ).setAction("Settings") {
             openAppSettings()
@@ -91,6 +134,14 @@ class MainActivity : AppCompatActivity() {
     private fun startBackgroundService() {
         val serviceIntent = Intent(this, BackgroundService::class.java)
         startForegroundService(serviceIntent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Recheck permissions when returning to the app
+        if (!serviceStarted) {
+            checkAndRequestPermissions()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
