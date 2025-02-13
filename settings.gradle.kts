@@ -7,21 +7,16 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
     }
 }
 
-rootProject.name = "kotlin-android-template"
+rootProject.name = "AndroUsb_DumpV-2"
 
-// Enable required feature previews
+// Only enable TYPESAFE_PROJECT_ACCESSORS, remove VERSION_CATALOGS
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-enableFeaturePreview("VERSION_CATALOGS")
 
-include(
-    "app",
-    "library-android",
-    "library-compose",
-    "library-kotlin"
-)
+include(":app")
