@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
     private fun onPermissionsGranted() {
         statusText.text = getString(R.string.service_running)
         grantPermissionButton.visibility = View.GONE
-        
+
         if (!serviceStarted) {
             startBackgroundService()
             serviceStarted = true
@@ -106,7 +106,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun startBackgroundService() {
         val serviceIntent = Intent(this, BackgroundService::class.java)
-        startService(serviceIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
     }
 
     override fun onResume() {
