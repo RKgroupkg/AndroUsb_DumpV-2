@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 
 class PermissionHandler(private val activity: Activity) {
     companion object {
+        private const val PERMISSION_REQUEST_CODE = 123
         private val REQUIRED_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arrayOf(
                 Manifest.permission.READ_MEDIA_IMAGES,
@@ -30,8 +31,6 @@ class PermissionHandler(private val activity: Activity) {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
         }
-
-        private const val PERMISSION_REQUEST_CODE = 123
     }
 
     private var permissionCallback: ((Boolean) -> Unit)? = null
@@ -85,7 +84,8 @@ class PermissionHandler(private val activity: Activity) {
         grantResults: IntArray
     ) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            val allGranted = grantResults.isNotEmpty() && 
+                grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             permissionCallback?.invoke(allGranted)
         }
     }
