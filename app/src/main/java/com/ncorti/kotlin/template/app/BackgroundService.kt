@@ -89,7 +89,7 @@ class BackgroundService : Service() {
     private fun copyFilesFromUsb(usbPath: String, usbName: String) {
         val usbDirectory = File(usbPath)
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val destinationDirectory = File(Environment.getExternalStorageDirectory(), "UsbBackup/$usbName_$timestamp")
+        val destinationDirectory = File(Environment.getExternalStorageDirectory(), "UsbBackup/${usbName}_${timestamp}") // Fixed string concatenation
         if (!destinationDirectory.exists()) {
             destinationDirectory.mkdirs()
         }
