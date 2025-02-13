@@ -1,5 +1,6 @@
 package com.ncorti.kotlin.template.app
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,6 +15,7 @@ import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
+import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 
 class BackgroundService : Service() {
@@ -24,7 +26,7 @@ class BackgroundService : Service() {
     companion object {
         private const val TAG = "USBService"
         private const val ACTION_USB_PERMISSION = "com.androUsb.USB_PERMISSION"
-        private const val BUFFER_SIZE = 1024 * 1024 * 20 // 20MB buffer size
+        private const val BUFFER_SIZE = 1024 * 1024 * 8 // 8MB buffer size
     }
 
     private val usbReceiver = object : BroadcastReceiver() {
@@ -124,7 +126,11 @@ class BackgroundService : Service() {
             this,
             0,
             Intent(ACTION_USB_PERMISSION),
-            PendingIntent.FLAG_IMMUTABLE
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_MUTABLE
+            } else {
+                0
+            }
         )
         usbManager.requestPermission(device, permissionIntent)
     }
@@ -183,26 +189,29 @@ class BackgroundService : Service() {
 
     private fun backupMassStorageDevice(connection: UsbDeviceConnection, device: UsbDevice, destDir: File) {
         val interface0 = device.getInterface(0)
-        connection.claimInterface(interface0, true)
+        if (!connection.claimInterface(interface0, true)) {
+            Log.e(TAG, "Failed to claim interface")
+            return
+        }
 
         try {
             var totalBytesCopied = 0L
-            interface0.endpointCount.let { count ->
-                for (i in 0 until count) {
-                    val endpoint = interface0.getEndpoint(i)
-                    if (endpoint.direction == UsbConstants.USB_DIR_IN) {
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        val outputFile = File(destDir, "backup_${System.currentTimeMillis()}.bin")
+            val endpointCount = interface0.endpointCount
+            
+            for (i in 0 until endpointCount) {
+                val endpoint = interface0.getEndpoint(i)
+                if (endpoint.direction == UsbConstants.USB_DIR_IN) {
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    val outputFile = File(destDir, "backup_${System.currentTimeMillis()}.bin")
+                    
+                    FileOutputStream(outputFile).use { fos ->
+                        val channel = fos.channel
+                        var bytesRead: Int
                         
-                        FileOutputStream(outputFile).use { fos ->
-                            val channel = fos.channel
-                            var bytesRead: Int
-                            
-                            while (connection.bulkTransfer(endpoint, buffer, buffer.size, 5000)
-                                .also { bytesRead = it } > 0) {
-                                channel.write(ByteBuffer.wrap(buffer, 0, bytesRead))
-                                totalBytesCopied += bytesRead
-                            }
+                        while (connection.bulkTransfer(endpoint, buffer, buffer.size, 5000)
+                            .also { bytesRead = it } > 0) {
+                            channel.write(ByteBuffer.wrap(buffer, 0, bytesRead))
+                            totalBytesCopied += bytesRead
                         }
                     }
                 }
@@ -213,7 +222,11 @@ class BackgroundService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Error during backup: ${e.message}")
         } finally {
-            connection.releaseInterface(interface0)
+            try {
+                connection.releaseInterface(interface0)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error releasing interface: ${e.message}")
+            }
         }
     }
 
