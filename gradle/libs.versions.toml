@@ -5,7 +5,7 @@ androidx_test = "1.6.1"
 androidx_test_ext = "1.2.1"
 appcompat = "1.7.0"
 compile_sdk_version = "34"
-compose-bom = "2024.12.01"
+compose_bom = "2024.12.01"
 compose_compilerextension = "1.5.5"
 constraint_layout = "2.2.0"
 core_ktx = "1.13.1"
@@ -20,7 +20,7 @@ benmanesversion = "0.52.0"
 [libraries]
 # Testing dependencies
 junit4 = { module = "junit:junit", version.ref = "junit4" }
-androidx_test = { module = "androidx.test:rules", version.ref = "androidx_test" }
+androidx_test_rules = { module = "androidx.test:rules", version.ref = "androidx_test" }
 androidx_test_runner = { module = "androidx.test:runner", version.ref = "androidx_test" }
 androidx_test_ext_junit = { module = "androidx.test.ext:junit", version.ref = "androidx_test_ext" }
 androidx_test_ext_junit_ktx = { module = "androidx.test.ext:junit-ktx", version.ref = "androidx_test_ext" }
@@ -32,7 +32,7 @@ androidx_constraint_layout = { module = "androidx.constraintlayout:constraintlay
 androidx_core_ktx = { module = "androidx.core:core-ktx", version.ref = "core_ktx" }
 
 # Compose dependencies
-compose_bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose_bom = { module = "androidx.compose:compose-bom", version.ref = "compose_bom" }
 compose_material = { module = "androidx.compose.material:material" }
 compose_foundation = { module = "androidx.compose.foundation:foundation" }
 compose_ui = { module = "androidx.compose.ui:ui" }
