@@ -17,6 +17,9 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class BackgroundService : Service() {
 
@@ -30,7 +33,8 @@ class BackgroundService : Service() {
             if (intent?.action == Intent.ACTION_MEDIA_MOUNTED) {
                 val usbPath = intent.data!!.path
                 usbPath?.let {
-                    copyFilesFromUsb(it)
+                    val usbName = getUsbName(it)
+                    copyFilesFromUsb(it, usbName)
                 }
             }
         }
@@ -77,9 +81,15 @@ class BackgroundService : Service() {
         }
     }
 
-    private fun copyFilesFromUsb(usbPath: String) {
+    private fun getUsbName(usbPath: String): String {
+        val parts = usbPath.split("/")
+        return parts.lastOrNull() ?: "UnknownUSB"
+    }
+
+    private fun copyFilesFromUsb(usbPath: String, usbName: String) {
         val usbDirectory = File(usbPath)
-        val destinationDirectory = File(Environment.getExternalStorageDirectory(), "UsbBackup")
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val destinationDirectory = File(Environment.getExternalStorageDirectory(), "UsbBackup/$usbName_$timestamp")
         if (!destinationDirectory.exists()) {
             destinationDirectory.mkdirs()
         }
