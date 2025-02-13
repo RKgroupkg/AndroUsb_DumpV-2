@@ -1,15 +1,18 @@
 buildscript {
-    val kotlinVersion = "1.9.0"
-    val agpVersion = "8.0.2"
-    
-    repositories {  // Add this repositories block back in buildscript
+    repositories {
         google()
         mavenCentral()
     }
-    
     dependencies {
-        classpath("com.android.tools.build:gradle:$agpVersion")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        classpath("com.android.tools.build:gradle:7.2.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.0")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 
