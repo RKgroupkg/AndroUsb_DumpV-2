@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- This filter accepts all USB devices -->
-    <usb-device />
+    <!-- This filter matches any USB mass storage device -->
+    <usb-device class="8" subclass="6" protocol="80" />
 </resources>
