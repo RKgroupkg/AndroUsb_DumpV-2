@@ -1,39 +1,33 @@
+package com.ncorti.kotlin.template.app
+
 import android.Manifest
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class PermissionHandler(private val activity: Activity) {
-
     companion object {
         private val REQUIRED_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13 and above
             arrayOf(
                 Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_DOCUMENTS,
-                Manifest.permission.FOREGROUND_SERVICE,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO,
                 Manifest.permission.POST_NOTIFICATIONS
             )
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11 and 12
             arrayOf(
-                Manifest.permission.MANAGE_EXTERNAL_STORAGE,
-                Manifest.permission.FOREGROUND_SERVICE
+                Manifest.permission.MANAGE_EXTERNAL_STORAGE
             )
         } else {
-            // Android 6-10
             arrayOf(
                 Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.FOREGROUND_SERVICE
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
         }
 
@@ -46,16 +40,12 @@ class PermissionHandler(private val activity: Activity) {
         permissionCallback = callback
 
         when {
-            // For Android 11 (R) and above, check for MANAGE_EXTERNAL_STORAGE
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager() -> {
                 requestManageExternalStoragePermission()
             }
-            
-            // For Android 6-10, check regular permissions
             !hasRequiredPermissions() -> {
                 requestPermissions()
             }
-            
             else -> {
                 callback(true)
             }
