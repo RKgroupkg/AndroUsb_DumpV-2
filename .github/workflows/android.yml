@@ -38,6 +38,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
+    - name: Clear Gradle Cache (Optional)
+      run: |
+        rm -rf $HOME/.gradle/caches/
+        rm -rf $HOME/.gradle/wrapper/
+
     - name: Build with Gradle
       run: ./gradlew build --stacktrace
 
