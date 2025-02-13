@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">USB Backup</string>
+    <string name="app_name">USB Manager</string>
     <string name="checking_permissions">Checking permissions…</string>
     <string name="grant_permissions">Grant Permissions</string>
     <string name="service_running">USB Backup Service Running</string>
