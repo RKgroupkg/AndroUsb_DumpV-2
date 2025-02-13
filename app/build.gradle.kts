@@ -1,6 +1,7 @@
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     kotlin("android")
+    id("maven-publish")
 }
 
 android {
@@ -8,15 +9,9 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.min_sdk_version.get().toInt()
-        namespace = "com.ncorti.kotlin.template.app"
-
-        applicationId = AppCoordinates.APP_ID
-        versionCode = AppCoordinates.APP_VERSION_CODE
-        versionName = AppCoordinates.APP_VERSION_NAME
+        namespace = "com.ncorti.kotlin.template.library.android"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-    buildFeatures {
-        viewBinding = true
+        consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -34,40 +29,24 @@ android {
             )
         }
     }
-
     lint {
         warningsAsErrors = true
         abortOnError = true
         disable.add("GradleDependency")
     }
+}
 
-    // Use this block to configure different flavors
-    // flavorDimensions("version")
-    // productFlavors {
-    //     create("full") {
-    //         dimension = "version"
-    //         applicationIdSuffix = ".full"
-    //     }
-    //     create("demo") {
-    //         dimension = "version"
-    //         applicationIdSuffix = ".demo"
-    //     }
-    // }
+publishing {
+    singleVariant("release") {
+        withSourcesJar()
+        withJavadocJar()
+    }
 }
 
 dependencies {
-    implementation(projects.libraryAndroid)
-    implementation(projects.libraryCompose)
-    implementation(projects.libraryKotlin)
-
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraint_layout)
     implementation(libs.androidx.core.ktx)
-
     testImplementation(libs.junit)
-
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.androidx.test.ext.junit.ktx)
-    androidTestImplementation(libs.androidx.test.rules)
-    androidTestImplementation(libs.espresso.core)
 }
