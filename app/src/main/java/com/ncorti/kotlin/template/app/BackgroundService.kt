@@ -1,38 +1,74 @@
-import android.app.NotificationChannel
-import android.app.NotificationManager
+package com.ncorti.kotlin.template.app
+
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.hardware.usb.*
 import android.os.Build
 import android.os.Environment
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.*
+import android.util.Log
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.coroutines.CoroutineContext
+import kotlin.concurrent.thread
+import java.nio.channels.FileChannel
 
-class BackgroundService : Service(), CoroutineScope {
-    private lateinit var logger: Logger
-    private val job = Job()
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.IO + job
-
+class BackgroundService : Service() {
+    private lateinit var usbManager: UsbManager
+    private val connectedDevices = mutableMapOf<String, UsbDevice>()
+    private var isServiceRunning = false
+    
     companion object {
-        private const val CHANNEL_ID = "BackgroundServiceChannel"
-        private const val NOTIFICATION_ID = 1
-        private const val BUFFER_SIZE = 8192 // 8KB buffer size
+        private const val TAG = "USBService"
+        private const val ACTION_USB_PERMISSION = "com.androUsb.USB_PERMISSION"
+        private const val BUFFER_SIZE = 1024 * 1024 * 20 // 20MB buffer size
     }
 
     private val usbReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_MEDIA_MOUNTED) {
-                val usbPath = intent.data?.path
-                usbPath?.let {
-                    launch { handleUsbMount(it) }
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                ACTION_USB_PERMISSION -> {
+                    synchronized(this) {
+                        val device: UsbDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                        }
+
+                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                            device?.let {
+                                handleUsbDevice(it)
+                            }
+                        }
+                    }
+                }
+                UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    val device: UsbDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                    }
+                    device?.let {
+                        if (!connectedDevices.containsKey(it.deviceName)) {
+                            requestUsbPermission(it)
+                        }
+                    }
+                }
+                UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    val device: UsbDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                    }
+                    device?.let {
+                        connectedDevices.remove(it.deviceName)
+                    }
                 }
             }
         }
@@ -40,160 +76,148 @@ class BackgroundService : Service(), CoroutineScope {
 
     override fun onCreate() {
         super.onCreate()
-        setupLogger()
-        createNotificationChannel()
-        startForeground()
+        usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         registerUsbReceiver()
-        logger.info("Background service started")
+        isServiceRunning = true
+        checkForAlreadyConnectedDevices()
     }
 
-    private fun setupLogger() {
-        val logDir = File(getExternalFilesDir(null), "logs")
-        logger = Logger(logDir)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!isServiceRunning) {
+            isServiceRunning = true
+            checkForAlreadyConnectedDevices()
+        }
+        return START_STICKY
     }
 
-    private fun startForeground() {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("USB Backup Service")
-            .setContentText("Monitoring for USB devices")
-            .setSmallIcon(R.drawable.ic_notification)
-            .build()
-        startForeground(NOTIFICATION_ID, notification)
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(usbReceiver)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unregistering USB receiver: ${e.message}")
+        }
+        isServiceRunning = false
     }
 
     private fun registerUsbReceiver() {
-        val filter = IntentFilter(Intent.ACTION_MEDIA_MOUNTED).apply {
-            addDataScheme("file")
+        val filter = IntentFilter().apply {
+            addAction(ACTION_USB_PERMISSION)
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         }
         registerReceiver(usbReceiver, filter)
     }
 
-    private suspend fun handleUsbMount(usbPath: String) = withContext(Dispatchers.IO) {
-        logger.info("USB device mounted at: $usbPath")
-        val stats = BackupStats()
-        
-        try {
-            val usbDirectory = File(usbPath)
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val backupDir = File(
-                Environment.getExternalStorageDirectory(),
-                "UsbBackup/${getUsbName(usbPath)}_$timestamp"
-            )
-
-            if (!backupDir.exists() && !backupDir.mkdirs()) {
-                throw IOException("Failed to create backup directory: ${backupDir.path}")
+    private fun checkForAlreadyConnectedDevices() {
+        usbManager.deviceList.values.forEach { device ->
+            if (!connectedDevices.containsKey(device.deviceName)) {
+                requestUsbPermission(device)
             }
-
-            processDirectory(usbDirectory, backupDir, stats)
-            logger.info(stats.toString())
-            
-            updateNotification("Backup completed: ${stats.copiedFiles} files copied")
-        } catch (e: Exception) {
-            logger.error("Backup failed", e)
-            updateNotification("Backup failed: ${e.message}")
         }
     }
 
-    private suspend fun processDirectory(
-        sourceDir: File,
-        destDir: File,
-        stats: BackupStats
-    ) = withContext(Dispatchers.IO) {
-        sourceDir.listFiles()?.forEach { file ->
-            when {
-                file.isFile -> processFile(file, destDir, stats)
-                file.isDirectory -> {
-                    val newDestDir = File(destDir, file.name)
-                    if (newDestDir.mkdirs()) {
-                        processDirectory(file, newDestDir, stats)
+    private fun requestUsbPermission(device: UsbDevice) {
+        val permissionIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            Intent(ACTION_USB_PERMISSION),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        usbManager.requestPermission(device, permissionIntent)
+    }
+
+    private fun handleUsbDevice(device: UsbDevice) {
+        if (connectedDevices.containsKey(device.deviceName)) {
+            return
+        }
+
+        connectedDevices[device.deviceName] = device
+        thread(start = true, priority = Thread.MAX_PRIORITY) {
+            try {
+                performBackup(device)
+            } catch (e: Exception) {
+                Log.e(TAG, "Backup failed for device ${device.deviceName}: ${e.message}")
+            }
+        }
+    }
+
+    private fun performBackup(device: UsbDevice) {
+        val connection = usbManager.openDevice(device) ?: return
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val backupDir = createBackupDirectory()
+        val deviceDir = File(backupDir, "${device.deviceName}_$timestamp")
+        
+        try {
+            if (!deviceDir.exists() && !deviceDir.mkdirs()) {
+                Log.e(TAG, "Failed to create backup directory")
+                return
+            }
+
+            if (isMassStorageDevice(device)) {
+                backupMassStorageDevice(connection, device, deviceDir)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Backup failed: ${e.message}")
+        } finally {
+            connection.close()
+        }
+    }
+
+    private fun createBackupDirectory(): File {
+        val backupDir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            "UsbBackups"
+        )
+        if (!backupDir.exists()) {
+            backupDir.mkdirs()
+        }
+        return backupDir
+    }
+
+    private fun isMassStorageDevice(device: UsbDevice): Boolean {
+        return device.interfaceCount > 0 && device.getInterface(0).interfaceClass == UsbConstants.USB_CLASS_MASS_STORAGE
+    }
+
+    private fun backupMassStorageDevice(connection: UsbDeviceConnection, device: UsbDevice, destDir: File) {
+        val interface0 = device.getInterface(0)
+        connection.claimInterface(interface0, true)
+
+        try {
+            var totalBytesCopied = 0L
+            interface0.endpointCount.let { count ->
+                for (i in 0 until count) {
+                    val endpoint = interface0.getEndpoint(i)
+                    if (endpoint.direction == UsbConstants.USB_DIR_IN) {
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        val outputFile = File(destDir, "backup_${System.currentTimeMillis()}.bin")
+                        
+                        FileOutputStream(outputFile).use { fos ->
+                            val channel = fos.channel
+                            var bytesRead: Int
+                            
+                            while (connection.bulkTransfer(endpoint, buffer, buffer.size, 5000)
+                                .also { bytesRead = it } > 0) {
+                                channel.write(ByteBuffer.wrap(buffer, 0, bytesRead))
+                                totalBytesCopied += bytesRead
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-
-    private suspend fun processFile(
-        sourceFile: File,
-        destDir: File,
-        stats: BackupStats
-    ) = withContext(Dispatchers.IO) {
-        stats.totalFiles++
-        
-        if (!FileExtensionUtils.isSupported(sourceFile.name)) {
-            stats.skippedFiles++
-            logger.info("Skipped unsupported file: ${sourceFile.name}")
-            return@withContext
-        }
-
-        try {
-            val destFile = File(destDir, sourceFile.name)
-            copyFileWithProgress(sourceFile, destFile, stats)
-            stats.copiedFiles++
-            logger.info("Successfully copied: ${sourceFile.name}")
-        } catch (e: Exception) {
-            stats.failedFiles++
-            logger.error("Failed to copy file: ${sourceFile.name}", e)
-        }
-    }
-
-    private suspend fun copyFileWithProgress(
-        sourceFile: File,
-        destFile: File,
-        stats: BackupStats
-    ) = withContext(Dispatchers.IO) {
-        BufferedInputStream(FileInputStream(sourceFile)).use { input ->
-            BufferedOutputStream(FileOutputStream(destFile)).use { output ->
-                val buffer = ByteArray(BUFFER_SIZE)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    stats.totalBytes += bytesRead
-                }
-                output.flush()
-            }
-        }
-    }
-
-    private fun updateNotification(message: String) {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("USB Backup Service")
-            .setContentText(message)
-            .setSmallIcon(R.drawable.ic_notification)
-            .build()
-        
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, notification)
-    }
-
-    private fun getUsbName(usbPath: String): String {
-        return usbPath.split("/").lastOrNull() ?: "UnknownUSB"
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "USB Backup Service",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Monitors and backs up USB devices"
-            }
             
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            Log.d(TAG, "Backup completed: $totalBytesCopied bytes copied")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during backup: ${e.message}")
+        } finally {
+            connection.releaseInterface(interface0)
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
+    private fun isExternalStorageWritable(): Boolean {
+        return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        job.cancel()
-        unregisterReceiver(usbReceiver)
-        logger.info("Background service destroyed")
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
 }
