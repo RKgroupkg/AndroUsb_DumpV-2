@@ -1,14 +1,12 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 plugins {
-    id("com.android.application") apply false
-    id("com.android.library") apply false
-    kotlin("android") apply false
-    alias(libs.plugins.compose.compiler) apply false
-    alias(libs.plugins.detekt)
-    alias(libs.plugins.versions)
-    cleanup
-    base
+    // Access version catalog
+    val libs = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+    
+    id("io.gitlab.arturbosch.detekt").version(libs.findVersion("detekt").get().toString())
+    id("com.github.ben-manes.versions").version(libs.findVersion("benmanesversion").get().toString())
+    id("org.jetbrains.kotlin.plugin.compose").version(libs.findVersion("kotlin").get().toString())
 }
 
 allprojects {
