@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.app"
+    namespace = "com.ncorti.kotlin.template.app"  // This replaces the package in AndroidManifest.xml
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.app"
+        applicationId = "com.ncorti.kotlin.template.app"
         minSdk = 23
         targetSdk = 34
         versionCode = 1
