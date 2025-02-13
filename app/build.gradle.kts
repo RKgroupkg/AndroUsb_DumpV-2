@@ -4,10 +4,10 @@ plugins {
 }
 
 android {
-    compileSdk = libs.versions.compile.sdk.version.get().toInt()
+    compileSdk = libs.versions.compile_sdk_version.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.min.sdk.version.get().toInt()
+        minSdk = libs.versions.min_sdk_version.get().toInt()
         namespace = "com.ncorti.kotlin.template.app"
 
         applicationId = AppCoordinates.APP_ID
@@ -61,7 +61,7 @@ dependencies {
     implementation(projects.libraryKotlin)
 
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraint.layout)
+    implementation(libs.androidx.constraint_layout)
     implementation(libs.androidx.core.ktx)
 
     testImplementation(libs.junit)
