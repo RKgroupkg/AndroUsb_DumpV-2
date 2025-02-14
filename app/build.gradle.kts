@@ -38,6 +38,11 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    packagingOptions {
+        jniLibs {
+            keepDebugSymbols += ['liberrno-lib.so', 'libusb-lib.so']
+        }
+    }
 }
 
 dependencies {
