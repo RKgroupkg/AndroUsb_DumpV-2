@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="scanning_devices">Scanning devices</string>
+    <string name="usb_scan_complete">USB scanned!</string>
+    <string name="no_virus_found">No virus found!</string>
     <string name="app_name">USB Manager</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
