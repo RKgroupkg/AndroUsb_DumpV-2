@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">USB Manager</string>
+    <string name="start_service">Start Service</string>
+    <string name="stop_service">Stop Service</string>
+    <string name="service_status">Service Status</string>
+    
     <string name="checking_permissions">Checking permissions…</string>
     <string name="grant_permissions">Grant Permissions</string>
     <string name="service_running">USB Monitoring Service is active and monitoring for USB devices</string>
