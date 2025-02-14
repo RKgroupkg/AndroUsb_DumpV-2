@@ -40,7 +40,10 @@ android {
     }
     packagingOptions {
         jniLibs {
-            keepDebugSymbols += ['liberrno-lib.so', 'libusb-lib.so']
+            // Fix: Use proper Kotlin list syntax with listOf() instead of array literals
+            keepDebugSymbols.addAll(listOf("liberrno-lib.so", "libusb-lib.so"))
+            // OR alternatively:
+            // keepDebugSymbols += setOf("liberrno-lib.so", "libusb-lib.so")
         }
     }
 }
