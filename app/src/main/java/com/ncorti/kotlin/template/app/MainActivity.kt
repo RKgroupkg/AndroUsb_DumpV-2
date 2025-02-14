@@ -1,4 +1,4 @@
-package com.ncorti.kotlin.template.app
+
 
 import com.ncorti.kotlin.template.app.BackgroundService
 
