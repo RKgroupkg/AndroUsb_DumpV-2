@@ -1,5 +1,7 @@
 package com.ncorti.kotlin.template.app
 
+import com.ncorti.kotlin.template.app.BackgroundService
+
 import android.Manifest
 import android.app.ActivityManager
 import android.content.Context
@@ -102,25 +104,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Update service management functions:
     private fun startBackgroundService() {
-        val serviceIntent = Intent(this, BackgroundService::class.java).apply {
-            action = BackgroundService.ACTION_START_SERVICE
-        }
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
-        }
-        
-        checkAndUpdateServiceState()
-    }
+       val serviceIntent = Intent(this, BackgroundService::class.java).apply {
+          action = BackgroundService.ACTION_START_SERVICE
+     }
+    
+       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          startForegroundService(serviceIntent)
+     } else {
+          startService(serviceIntent)
+     }
+    
+       checkAndUpdateServiceState()
+}
 
     private fun stopBackgroundService() {
-        val serviceIntent = Intent(this, BackgroundService::class.java)
+        val serviceIntent = Intent(this, BackgroundService::class.java).apply {
+            action = BackgroundService.ACTION_STOP_SERVICE
+      }
         stopService(serviceIntent)
         checkAndUpdateServiceState()
-    }
+}
 
     private fun isServiceRunning(): Boolean {
         val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
