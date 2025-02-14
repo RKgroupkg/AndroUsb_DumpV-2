@@ -1,202 +1,211 @@
 package com.ncorti.kotlin.template.app
 
+import android.Manifest
+import android.app.ActivityManager
+import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
-import android.view.View
 import android.widget.Button
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.snackbar.Snackbar
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var permissionHandler: PermissionHandler
-    private lateinit var rootView: View
     private lateinit var statusText: TextView
-    private lateinit var grantPermissionButton: Button
-    private var serviceStarted = false
+    private lateinit var startButton: Button
+    private lateinit var stopButton: Button
+    
+    private val storagePermissions = arrayOf(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+    
+    private val manageAllFilesLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { 
+        checkStoragePermissionsAndStartService() 
+    }
+
+    private val storagePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.all { it.value }) {
+            startBackgroundService()
+        } else {
+            showPermissionWarning()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Initialize views
-        rootView = findViewById(R.id.root_view)
-        statusText = findViewById(R.id.status_text)
-        grantPermissionButton = findViewById(R.id.grant_permission_button)
+        statusText = findViewById(R.id.statusText)
+        startButton = findViewById(R.id.startButton)
+        stopButton = findViewById(R.id.stopButton)
 
-        // Initialize permission handler
-        permissionHandler = PermissionHandler(this)
-
-        // Set up permission button
-        grantPermissionButton.setOnClickListener {
-            checkAndRequestPermissions()
-        }
-
-        // Initial permission check
-        checkAndRequestPermissions()
+        setupButtonListeners()
+        updateServiceStateUI()
     }
 
-    private fun checkAndRequestPermissions() {
-        statusText.text = getString(R.string.checking_permissions)
-        grantPermissionButton.visibility = View.GONE
+    private fun setupButtonListeners() {
+        startButton.setOnClickListener {
+            checkStoragePermissionsAndStartService()
+        }
 
-        permissionHandler.checkAndRequestPermissions { granted ->
-            if (granted) {
-                onPermissionsGranted()
-            } else {
-                if (permissionHandler.shouldShowPermissionRationale()) {
-                    showPermissionRationaleDialog()
-                } else {
-                    showPermissionDeniedMessage()
-                }
+        stopButton.setOnClickListener {
+            stopBackgroundService()
+            updateServiceStateUI()
+        }
+    }
+
+    private fun checkStoragePermissionsAndStartService() {
+        when {
+            hasAllFilesAccessPermission() -> startBackgroundService()
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> requestAllFilesAccess()
+            else -> requestLegacyStoragePermissions()
+        }
+    }
+
+    private fun hasAllFilesAccessPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            storagePermissions.all { 
+                ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED 
             }
         }
     }
 
-    private fun onPermissionsGranted() {
-        statusText.text = getString(R.string.service_running)
-        grantPermissionButton.visibility = View.GONE
-        
-        if (!serviceStarted) {
-            startBackgroundService()
-            serviceStarted = true
-            minimizeApp()
+    private fun requestAllFilesAccess() {
+        try {
+            manageAllFilesLauncher.launch(
+                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+            )
+        } catch (e: Exception) {
+            Toast.makeText(this, "Navigate to Settings to grant permission", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+            })
         }
     }
 
-    private fun startBackgroundService() {
-        val serviceIntent = Intent(this, BackgroundService::class.java).apply {
-            action = BackgroundService.ACTION_START_SERVICE
+    private fun requestLegacyStoragePermissions() {
+        when {
+            storagePermissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED } ->
+                startBackgroundService()
+            shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE) ->
+                showPermissionRationale()
+            else -> storagePermissionLauncher.launch(storagePermissions)
         }
-        
-        // Create a PendingIntent for the service
-        val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            PendingIntent.getForegroundService(
-                this,
-                0,
-                serviceIntent,
-                PendingIntent.FLAG_IMMUTABLE
-            )
-        } else {
-            PendingIntent.getService(
-                this,
-                0,
-                serviceIntent,
-                PendingIntent.FLAG_IMMUTABLE
-            )
+    }
+
+    private fun showPermissionRationale() {
+        Toast.makeText(this, 
+            "Storage access is required to manage USB file transfers", 
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    private fun showPermissionWarning() {
+        Toast.makeText(this, 
+            "Full storage permissions are required for proper functionality", 
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    private fun startBackgroundService() {
+        if (isServiceRunning()) {
+            updateServiceStateUI()
+            return
         }
 
-        // Start the service based on Android version
+        try {
+            val serviceIntent = Intent(this, BackgroundService::class.java).apply {
+                action = BackgroundService.ACTION_START_SERVICE
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+
+            setupServiceMonitor()
+            updateServiceStateUI()
+        } catch (e: SecurityException) {
+            logError("Service start failed", e)
+            showPermissionWarning()
+        }
+    }
+
+    private fun setupServiceMonitor() {
+        val alarmManager = getSystemService(AlarmManager::class.java)
+        val monitorIntent = Intent(this, BackgroundService::class.java).apply {
+            action = BackgroundService.ACTION_HEARTBEAT
+        }
+
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+
+        val pendingIntent = PendingIntent.getService(
+            this, 0, monitorIntent, flags
+        )
+
+        alarmManager?.setInexactRepeating(
+            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            SystemClock.elapsedRealtime() + AlarmManager.INTERVAL_HOUR,
+            AlarmManager.INTERVAL_HOUR,
+            pendingIntent
+        )
+    }
+
+    private fun stopBackgroundService() {
+        val serviceIntent = Intent(this, BackgroundService::class.java).apply {
+            action = BackgroundService.ACTION_STOP_SERVICE
+        }
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
             startService(serviceIntent)
         }
-
-        // Ensure service stays alive
-        setupServiceKeepAlive()
     }
 
-    private fun setupServiceKeepAlive() {
-        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
-        val keepAliveIntent = Intent(this, BackgroundService::class.java).apply {
-            action = BackgroundService.ACTION_KEEP_ALIVE
-        }
-        
-        val keepAlivePendingIntent = PendingIntent.getService(
-            this,
-            1,
-            keepAliveIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Schedule periodic keep-alive signal
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis() + KEEP_ALIVE_INTERVAL,
-                keepAlivePendingIntent
-            )
-        } else {
-            alarmManager.setInexactRepeating(
-                AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis(),
-                KEEP_ALIVE_INTERVAL,
-                keepAlivePendingIntent
-            )
-        }
+    private fun updateServiceStateUI() {
+        val isRunning = isServiceRunning()
+        statusText.text = if (isRunning) "Service Active" else "Service Inactive"
+        startButton.isEnabled = !isRunning
+        stopButton.isEnabled = isRunning
     }
 
-    private fun minimizeApp() {
-        // Move task to back to keep app running in background
-        moveTaskToBack(true)
-    }
-
-    private fun showPermissionRationaleDialog() {
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.permissions_required))
-            .setMessage(getString(R.string.permission_rationale_message))
-            .setPositiveButton(getString(R.string.grant_permissions)) { _, _ ->
-                checkAndRequestPermissions()
-            }
-            .setNegativeButton(getString(R.string.cancel)) { _, _ ->
-                showPermissionDeniedMessage()
-            }
-            .setCancelable(false)
-            .show()
-    }
-
-    private fun showPermissionDeniedMessage() {
-        statusText.text = getString(R.string.permissions_denied)
-        grantPermissionButton.apply {
-            visibility = View.VISIBLE
-            text = getString(R.string.grant_permissions)
-        }
-
-        Snackbar.make(
-            rootView,
-            getString(R.string.storage_permission_required),
-            Snackbar.LENGTH_LONG
-        ).setAction(getString(R.string.settings)) {
-            openAppSettings()
-        }.show()
-    }
-
-    private fun openAppSettings() {
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", packageName, null)
-            startActivity(this)
-        }
+    private fun isServiceRunning(): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return manager.getRunningServices(Int.MAX_VALUE)
+            .any { it.service.className == BackgroundService::class.java.name }
     }
 
     override fun onResume() {
         super.onResume()
-        if (!serviceStarted) {
-            checkAndRequestPermissions()
-        }
+        updateServiceStateUI()
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        permissionHandler.onActivityResult(requestCode, resultCode)
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        permissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
-
-    companion object {
-        private const val KEEP_ALIVE_INTERVAL = 15 * 60 * 1000L // 15 minutes
+    private fun logError(message: String, error: Exception? = null) {
+        error?.printStackTrace()
+        Toast.makeText(this, "$message: ${error?.message ?: "Unknown error"}", Toast.LENGTH_LONG).show()
     }
 }
