@@ -5,7 +5,7 @@
     <string name="stop_service">Stop Service</string>
     <string name="service_status">Service Status</string>
     <string name="storage_permission_required">Storage permissions are required for USB backup</string>
-    
+    <string name="service_stopped">USB Monitoring Service is stopped</string>
     <string name="checking_permissions">Checking permissions…</string>
     <string name="grant_permissions">Grant Permissions</string>
     <string name="service_running">USB Monitoring Service is active and monitoring for USB devices</string>
