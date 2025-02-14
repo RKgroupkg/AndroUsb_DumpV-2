@@ -10,10 +10,9 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
-        mavenCentral()
-        maven("https://jitpack.io") 
+        mavenCentral() 
     }
 }
 
-rootProject.name = "AndroUsb_DumpV-2"
+rootProject.name = "UsbManager"
 include(":app")
