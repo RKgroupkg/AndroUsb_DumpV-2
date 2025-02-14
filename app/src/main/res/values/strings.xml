@@ -3,7 +3,7 @@
     <string name="app_name">USB Manager</string>
     <string name="checking_permissions">Checking permissions…</string>
     <string name="grant_permissions">Grant Permissions</string>
-    <string name="service_running">USB Backup Service is active and monitoring for USB devices</string>
+    <string name="service_running">USB Monitoring Service is active and monitoring for USB devices</string>
     <string name="permissions_required">Permissions Required</string>
     <string name="permissions_denied">⚠️ Required permissions not granted</string>
     <string name="permission_rationale_message">This app needs storage permissions to:\n\n• Detect USB devices\n• Access files on USB devices\n• Create backup copies\n\nWithout these permissions, the app cannot perform backups.</string>
