@@ -61,14 +61,14 @@
         </activity>
 
         <service
-            android:name=".service.UsbMonitorService"
+            android:name=".BackgroundService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync"
             android:directBootAware="true" />
 
         <receiver
-            android:name=".receiver.BootReceiver"
+            android:name=".BootReceiver"
             android:enabled="true"
             android:exported="true"
             android:directBootAware="true">
