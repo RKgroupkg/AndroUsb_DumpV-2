@@ -45,7 +45,7 @@ class BackgroundService : Service() {
         const val ACTION_START_SERVICE = "com.ncorti.kotlin.template.app.ACTION_START_SERVICE"
         private const val ACTION_KEEP_ALIVE = "com.ncorti.kotlin.template.app.ACTION_KEEP_ALIVE"
         private const val ACTION_RETRY_DEVICE = "com.ncorti.kotlin.template.app.RETRY_DEVICE"
-        private const val ACTION_STOP_SERVICE = "STOP_SERVICE"
+        const val ACTION_STOP_SERVICE = "STOP_SERVICE"
         private const val ACTION_HEARTBEAT = "SERVICE_HEARTBEAT"
         
         private const val WAKE_LOCK_TIMEOUT = 30L * 60 * 1000 // 30 minutes
