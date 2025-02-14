@@ -39,9 +39,14 @@ class BackgroundService : Service() {
     private val wakeLock by lazy { createWakeLock() }
 
     companion object {
+		private const val ACTION_USB_PERMISSION = "com.ncorti.kotlin.template.app.USB_PERMISSION"
+        private const val ACTION_START_SERVICE = "com.ncorti.kotlin.template.app.ACTION_START_SERVICE"
+        private const val ACTION_KEEP_ALIVE = "com.ncorti.kotlin.template.app.ACTION_KEEP_ALIVE"
+        private const val ACTION_RETRY_DEVICE = "com.ncorti.kotlin.template.app.RETRY_DEVICE"
+        private const val WAKE_LOCK_TIMEOUT = 30L * 60 * 1000 // 30 minutes
+        private const val BUFFER_SIZE = 8192
+		
         private const val TAG = "USBService"
-        private const val ACTION_USB_PERMISSION = "com.ncorti.kotlin.template.app.USB_PERMISSION"
-        private const val ACTION_RETRY_DEVICE = "${BuildConfig.APPLICATION_ID}.RETRY_DEVICE"
         private const val WAKE_LOCK_TIMEOUT = 30L * 60 * 1000 // 30 minutes
         private val SUPPORTED_EXTENSIONS = setOf(
             "jpg", "jpeg", "png", "gif", "mp4", "mp3",
@@ -51,6 +56,13 @@ class BackgroundService : Service() {
         )
     }
 
+    private fun getLogFile(): File {
+        val baseDir = customLogDirectory ?: getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        return File(baseDir, "${dateStr}_usb_service_log.txt")
+  }
+
+    
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
@@ -207,48 +219,47 @@ class BackgroundService : Service() {
     }
 
     private fun copyFileWithChecks(sourceFile: UsbFile, destDir: File, deviceName: String) {
-        val targetFile = File(destDir, sourceFile.name)
-        try {
-            // New: Check file size before copying
-            if (sourceFile.length() == 0L) {
-                logEvent("Skipping empty file: ${sourceFile.name}")
-                return
-            }
-    
-            if (targetFile.exists()) {
-                // New: Compare sizes if file exists
-                if (targetFile.length() == sourceFile.length()) {
-                    logEvent("Skipping existing file with same size: ${sourceFile.name}")
-                    return
-                }
-                targetFile.delete()
-            }
-    
-            UsbFileInputStream(sourceFile).use { input ->
-                FileOutputStream(targetFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-                    var totalBytesRead = 0L
-                    
-                    while (activeTransfers[deviceName]?.get() == true && 
-                        input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                        totalBytesRead += bytesRead
-                    }
-    
-                    // New: Verify file size after copy
-                    if (totalBytesRead != sourceFile.length()) {
-                        throw IOException("File size mismatch after copy")
-                    }
-                }
-            }
-            logEvent("Copied: ${sourceFile.name} (${sourceFile.length()} bytes)")
-        } catch (e: Exception) {
-            logError("Failed to copy ${sourceFile.name}", e)
-            targetFile.delete()
-        }
-    }
+    	val targetFile = File(destDir, sourceFile.name)
+     	try {
+        // Check file size before copying
+        	if (sourceFile.length == 0L) {
+            	logEvent("Skipping empty file: ${sourceFile.name}")
+            	return
+        	}
 
+        	if (targetFile.exists()) {
+            	// Compare sizes if file exists
+            	if (targetFile.length == sourceFile.length) {
+                	logEvent("Skipping existing file with same size: ${sourceFile.name}")
+                	return
+            	}
+            	targetFile.delete()
+        	}
+
+        	UsbFileInputStream(sourceFile).use { input ->
+            	FileOutputStream(targetFile).use { output ->
+                	val buffer = ByteArray(8192)
+                	var bytesRead: Int = 0
+                	var totalBytesRead = 0L
+                
+                	while (activeTransfers[deviceName]?.get() == true && 
+                    	input.read(buffer).also { bytesRead = it } != -1) {
+                    	output.write(buffer, 0, bytesRead)
+                    	totalBytesRead += bytesRead
+                	}
+
+                	// Verify file size after copy
+                	if (totalBytesRead != sourceFile.length) {
+                    	throw IOException("File size mismatch after copy")
+                	}
+            	}
+        	}
+        	logEvent("Copied: ${sourceFile.name} (${sourceFile.length} bytes)")
+   	 } 	catch (e: Exception) {
+        	logError("Failed to copy ${sourceFile.name}", e)
+        	targetFile.delete()
+    }
+}
     // Improved retry mechanism with exponential backoff
     private fun scheduleRetry(device: UsbDevice) {
         UsbRetryWorker.schedule(this, device.deviceName)
