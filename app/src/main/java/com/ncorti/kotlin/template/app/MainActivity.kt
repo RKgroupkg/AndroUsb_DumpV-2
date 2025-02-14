@@ -1,6 +1,4 @@
-
-
-import com.ncorti.kotlin.template.app.BackgroundService
+package com.ncorti.kotlin.template.app
 
 import android.Manifest
 import android.app.ActivityManager
@@ -17,6 +15,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+// Add this import for R
+import com.ncorti.kotlin.template.app.R
 
 class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
@@ -39,6 +39,15 @@ class MainActivity : AppCompatActivity() {
         setupButtonListeners()
         checkAndUpdateServiceState()
     }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
 
     private fun initializeViews() {
         statusText = findViewById(R.id.statusText)
@@ -46,8 +55,16 @@ class MainActivity : AppCompatActivity() {
         stopButton = findViewById(R.id.stopButton)
     }
 
+    // Fix the lambda type inference issue by explicitly specifying the type
     private fun setupPermissionHandler() {
         permissionHandler = PermissionHandler(this)
+        permissionHandler.checkAndRequestPermissions { granted: Boolean ->
+            if (granted) {
+                startBackgroundService()
+            } else {
+                showPermissionError()
+            }
+        }
     }
 
     private fun setupButtonListeners() {
