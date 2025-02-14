@@ -45,6 +45,11 @@ class BackgroundService : Service() {
         private const val ACTION_RETRY_DEVICE = "com.ncorti.kotlin.template.app.RETRY_DEVICE"
         private const val WAKE_LOCK_TIMEOUT = 30L * 60 * 1000 // 30 minutes
         private const val BUFFER_SIZE = 8192
+
+        const val ACTION_START_SERVICE = "START_SERVICE"
+        const val ACTION_STOP_SERVICE = "STOP_SERVICE"
+        const val ACTION_HEARTBEAT = "SERVICE_HEARTBEAT"
+	
 		
         private const val TAG = "USBService"
         private const val WAKE_LOCK_TIMEOUT = 30L * 60 * 1000 // 30 minutes
