@@ -81,7 +81,7 @@ class BackgroundService : Service() {
 
             if (targetFile.exists()) {
                 // Compare sizes if file exists
-                if (targetFile.length == sourceFile.length) {
+                if (targetFile.length() == sourceFile.length) {
                     logEvent("Skipping existing file with same size: ${sourceFile.name}")
                     return
                 }
