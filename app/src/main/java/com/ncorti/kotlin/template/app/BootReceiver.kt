@@ -8,9 +8,8 @@ import android.os.Build
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            // Line 11: Need to add the action to the service intent
             val serviceIntent = Intent(context, BackgroundService::class.java).apply {
-              action = BackgroundService.ACTION_START_SERVICE
+                action = BackgroundService.ACTION_START_SERVICE
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)
