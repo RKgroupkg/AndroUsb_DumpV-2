@@ -1,3 +1,6 @@
+
+package com.ncorti.kotlin.template.app
+
 import android.app.*
 import android.content.*
 import android.hardware.usb.*
