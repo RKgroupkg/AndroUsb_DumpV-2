@@ -4,6 +4,7 @@
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
     <string name="service_status">Service Status</string>
+    <string name="storage_permission_required">Storage permission is required for app safe working</string>
     
     <string name="checking_permissions">Checking permissions…</string>
     <string name="grant_permissions">Grant Permissions</string>
