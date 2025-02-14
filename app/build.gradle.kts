@@ -44,9 +44,15 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.github.mjdev:libaums:master-SNAPSHOT")
 
-    // Coroutines
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")
+    
+    // Update your coroutines versions to match
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")  // Update this version to match android
+
     
     // Lifecycle components
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
