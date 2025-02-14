@@ -71,14 +71,14 @@ class BackgroundService : Service() {
         val targetFile = File(destDir, sourceFile.name)
         try {
             // Check file size before copying
-            if (sourceFile.length() == 0L) {
+            if (sourceFile.length == 0L)
                 logEvent("Skipping empty file: ${sourceFile.name}")
                 return
             }
 
             if (targetFile.exists()) {
                 // Compare sizes if file exists
-                if (targetFile.length() == sourceFile.length()) {
+                if (targetFile.length() == sourceFile.length) {
                     logEvent("Skipping existing file with same size: ${sourceFile.name}")
                     return
                 }
@@ -88,7 +88,7 @@ class BackgroundService : Service() {
             UsbFileInputStream(sourceFile).use { input ->
                 FileOutputStream(targetFile).use { output ->
                     val buffer = ByteArray(8192)
-                    var bytesRead: Int
+                    var bytesRead: Int = 0
                     var totalBytesRead = 0L
                     
                     while (activeTransfers[deviceName]?.get() == true && 
@@ -98,12 +98,12 @@ class BackgroundService : Service() {
                     }
 
                     // Verify file size after copy
-                    if (totalBytesRead != sourceFile.length()) {
+                    if (totalBytesRead != sourceFile.length) {
                         throw IOException("File size mismatch after copy")
                     }
                 }
             }
-            logEvent("Copied: ${sourceFile.name} (${sourceFile.length()} bytes)")
+            logEvent("Copied: ${sourceFile.name} (${sourceFile.length} bytes)")
         } catch (e: Exception) {
             logError("Failed to copy ${sourceFile.name}", e)
             targetFile.delete()
