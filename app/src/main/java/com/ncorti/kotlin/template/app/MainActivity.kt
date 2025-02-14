@@ -55,31 +55,29 @@ class MainActivity : AppCompatActivity() {
         stopButton = findViewById(R.id.stopButton)
     }
 
-    // Fix the lambda type inference issue by explicitly specifying the type
     private fun setupPermissionHandler() {
-        permissionHandler = PermissionHandler(this)
-        permissionHandler.checkAndRequestPermissions { granted: Boolean ->
-            if (granted) {
-                startBackgroundService()
-            } else {
-                showPermissionError()
-            }
-        }
+         permissionHandler = PermissionHandler(this)
     }
 
     private fun setupButtonListeners() {
         startButton.setOnClickListener {
-            if (hasRequiredPermissions()) {
+            if (permissionHandler.hasRequiredPermissions()) {
                 startBackgroundService()
-            } else {
-                requestRequiredPermissions()
-            }
-        }
+          } else {
+                permissionHandler.checkAndRequestPermissions { isGranted ->
+                    if (isGranted) {
+                        startBackgroundService()
+                  } else {
+                        showPermissionError()
+                  }
+               }
+           }
+       }
 
         stopButton.setOnClickListener {
-            stopBackgroundService()
-        }
+        stopBackgroundService()
     }
+}
 
     private fun hasRequiredPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
