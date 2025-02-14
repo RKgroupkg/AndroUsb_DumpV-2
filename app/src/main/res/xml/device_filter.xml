@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- This filter matches any USB mass storage device -->
-    <usb-device class="8" subclass="6" protocol="80" />
+    <!-- USB Mass Storage Class (MSC) -->
+    <usb-device class="8" subclass="6" protocol="80" /> <!-- SCSI transparent command set -->
+    <usb-device class="8" subclass="6" protocol="81" /> <!-- RBC (Reduced Block Commands) -->
+    <usb-device class="8" subclass="6" protocol="82" /> <!-- MMC-5 (Multimedia Commands) -->
+    <usb-device class="8" subclass="5" protocol="80" /> <!-- Legacy mass storage devices -->
+    
+    <!-- Media Transfer Protocol (MTP) -->
+    <usb-device class="6" subclass="1" protocol="1" />
+    
+    <!-- Picture Transfer Protocol (PTP) -->
+    <usb-device class="6" subclass="1" protocol="1" />
+    
+    <!-- Generic catch-all for mass storage -->
+    <usb-device class="8" />
 </resources>

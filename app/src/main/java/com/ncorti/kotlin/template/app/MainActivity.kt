@@ -1,7 +1,9 @@
 package com.ncorti.kotlin.template.app
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -64,7 +66,76 @@ class MainActivity : AppCompatActivity() {
         if (!serviceStarted) {
             startBackgroundService()
             serviceStarted = true
+            minimizeApp()
         }
+    }
+
+    private fun startBackgroundService() {
+        val serviceIntent = Intent(this, BackgroundService::class.java).apply {
+            action = BackgroundService.ACTION_START_SERVICE
+        }
+        
+        // Create a PendingIntent for the service
+        val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PendingIntent.getForegroundService(
+                this,
+                0,
+                serviceIntent,
+                PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getService(
+                this,
+                0,
+                serviceIntent,
+                PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
+        // Start the service based on Android version
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+
+        // Ensure service stays alive
+        setupServiceKeepAlive()
+    }
+
+    private fun setupServiceKeepAlive() {
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+        val keepAliveIntent = Intent(this, BackgroundService::class.java).apply {
+            action = BackgroundService.ACTION_KEEP_ALIVE
+        }
+        
+        val keepAlivePendingIntent = PendingIntent.getService(
+            this,
+            1,
+            keepAliveIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Schedule periodic keep-alive signal
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + KEEP_ALIVE_INTERVAL,
+                keepAlivePendingIntent
+            )
+        } else {
+            alarmManager.setInexactRepeating(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis(),
+                KEEP_ALIVE_INTERVAL,
+                keepAlivePendingIntent
+            )
+        }
+    }
+
+    private fun minimizeApp() {
+        // Move task to back to keep app running in background
+        moveTaskToBack(true)
     }
 
     private fun showPermissionRationaleDialog() {
@@ -104,11 +175,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startBackgroundService() {
-        val serviceIntent = Intent(this, BackgroundService::class.java)
-        startService(serviceIntent)
-    }
-
     override fun onResume() {
         super.onResume()
         if (!serviceStarted) {
@@ -128,5 +194,9 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    companion object {
+        private const val KEEP_ALIVE_INTERVAL = 15 * 60 * 1000L // 15 minutes
     }
 }
