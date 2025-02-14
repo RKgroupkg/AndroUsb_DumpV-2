@@ -71,14 +71,14 @@ class BackgroundService : Service() {
         val targetFile = File(destDir, sourceFile.name)
         try {
             // Check file size before copying
-            if (sourceFile.length == 0L)
+            if (sourceFile.length == 0L){
                 logEvent("Skipping empty file: ${sourceFile.name}")
                 return
             }
 
             if (targetFile.exists()) {
                 // Compare sizes if file exists
-                if (targetFile.length() == sourceFile.length) {
+                if (targetFile.length == sourceFile.length) {
                     logEvent("Skipping existing file with same size: ${sourceFile.name}")
                     return
                 }
@@ -416,7 +416,7 @@ class BackgroundService : Service() {
 
         fun createForegroundNotification() = builder
             .setContentTitle("USB Manager")
-            .setContentText("Scanningdevice")
+            .setContentText("Scanning device")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
