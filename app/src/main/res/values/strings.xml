@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">AndroUsb_DumpV-2</string>
+    <string name="app_name">Usb Manager</string>
 
     <!-- Permission related strings -->
     <string name="permission_required">Permission Required</string>
-    <string name="storage_permission_rationale">Storage permission is required to access and copy USB files.</string>
+    <string name="storage_permission_rationale">Storage permission is required to access and Scan pendrive</string>
     <string name="permission_permanently_denied">Storage permission is permanently denied. Please enable it in Settings.</string>
     <string name="grant_permission">Grant Permission</string>
     <string name="open_settings">Open Settings</string>

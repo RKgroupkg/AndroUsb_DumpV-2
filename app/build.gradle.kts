@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.ncorti.kotlin.template.app"
+    namespace = "com.UsbManger.rkgroup.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.ncorti.kotlin.template.app"
+        applicationId = "com.UsbManger.rkgroup.app"
         minSdk = 23
         targetSdk = 34
         versionCode = 1

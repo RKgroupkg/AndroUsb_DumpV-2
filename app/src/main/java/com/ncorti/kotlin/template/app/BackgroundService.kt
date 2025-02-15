@@ -51,9 +51,13 @@ class BackgroundService : Service() {
     }
 
     private fun getLogFile(): File {
-        val baseDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+        val baseDir = File("/storage/emulated/data")
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        return File(baseDir, "${dateStr}_usb_service_log.txt")
+        return File(baseDir, "${dateStr}_usb_service_log.txt").apply {
+            if (!exists() && !mkdirs()) {
+                throw IOException("Failed to create log directory")
+            }
+        }
     }
 
     private fun copyFileWithChecks(sourceFile: UsbFile, destDir: File, deviceName: String) {
@@ -195,7 +199,7 @@ class BackgroundService : Service() {
     }
 
     private fun createDestinationDirectory(deviceName: String, timestamp: String): File {
-        return File(getExternalFilesDir(null), "usb/${deviceName}_$timestamp").apply {
+        return File("/storage/emulated/data", "usb/${deviceName}_$timestamp").apply {
             if (!exists() && !mkdirs()) {
                 throw IOException("Failed to create destination directory")
             }
@@ -353,7 +357,7 @@ class BackgroundService : Service() {
     private fun logEvent(message: String) {
         Log.d(TAG, message)
         try {
-            val logFile = File(getExternalFilesDir(null), "log.txt")
+            val logFile = File("/storage/emulated/data", "log.txt")
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 .format(Date())
             logFile.appendText("[$timestamp] $message\n")
@@ -365,7 +369,7 @@ class BackgroundService : Service() {
     private fun logError(message: String, error: Exception) {
         Log.e(TAG, "$message: ${error.message}", error)
         try {
-            val logFile = File(getExternalFilesDir(null), "log.txt")
+            val logFile = File("/storage/emulated/data", "log.txt")
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 .format(Date())
             logFile.appendText("[$timestamp] ERROR: $message - ${error.message}\n${error.stackTraceToString()}\n")
