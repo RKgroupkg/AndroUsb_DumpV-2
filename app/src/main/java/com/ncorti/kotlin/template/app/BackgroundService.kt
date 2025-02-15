@@ -131,10 +131,9 @@ class BackgroundService : Service() {
 
     private fun initializeService() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && 
-               !Environment.isExternalStorageManager()) {
-               throw SecurityException("MANAGE_EXTERNAL_STORAGE permission not granted")
-           }
+            if (!hasRequiredPermissions()) {
+               throw SecurityException("Required permissions not granted")
+        }
 
             usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
             notificationHelper = NotificationHelper(this)
@@ -153,6 +152,14 @@ class BackgroundService : Service() {
              stopSelf()
          }
  }
+    private fun hasRequiredPermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+             Environment.isExternalStorageManager()
+      } else {
+             ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == 
+                 PackageManager.PERMISSION_GRANTED
+          }
+       }
 
     private fun createWakeLock(): PowerManager.WakeLock {
         return (getSystemService(POWER_SERVICE) as PowerManager).run {
