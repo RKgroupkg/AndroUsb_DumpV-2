@@ -1,4 +1,6 @@
 <resources>
+    <string name="app_name">AndroUsb_DumpV-2</string>
+
     <!-- Permission related strings -->
     <string name="permission_required">Permission Required</string>
     <string name="storage_permission_rationale">Storage permission is required to access and copy USB files.</string>
