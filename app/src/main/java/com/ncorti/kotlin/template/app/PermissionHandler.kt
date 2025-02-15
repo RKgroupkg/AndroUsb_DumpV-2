@@ -1,4 +1,4 @@
-package com.ncorti.kotlin.template.app
+package com.ncorti.kotlin.template.app.permission
 
 import android.Manifest
 import android.app.Activity
@@ -9,110 +9,161 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-class PermissionHandler(private val activity: Activity) {
-    
-    private var permissionCallback: ((Boolean) -> Unit)? = null
-    
-    companion object {
-        private const val PERMISSION_REQUEST_CODE = 123
-        
-        private val STORAGE_PERMISSIONS = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )
+class PermissionHandler(
+    private val activity: AppCompatActivity
+) : DefaultLifecycleObserver {
+
+    private var permissionCallback: ((PermissionState) -> Unit)? = null
+    private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var settingsLauncher: ActivityResultLauncher<Intent>
+
+    private val _permissionState = MutableStateFlow(PermissionState.DENIED)
+    val permissionState: StateFlow<PermissionState> = _permissionState
+
+    init {
+        activity.lifecycle.addObserver(this)
+        setupPermissionLaunchers()
     }
 
-    fun checkAndRequestPermissions(callback: (Boolean) -> Unit) {
-        this.permissionCallback = callback
-        
+    override fun onCreate(owner: LifecycleOwner) {
+        super.onCreate(owner)
+        checkInitialPermissionState()
+    }
+
+    private fun setupPermissionLaunchers() {
+        permissionLauncher = activity.registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            handlePermissionResult(permissions)
+        }
+
+        settingsLauncher = activity.registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            checkInitialPermissionState()
+        }
+    }
+
+    private fun checkInitialPermissionState() {
         when {
-            // For Android 11 and above
+            hasAllPermissions() -> {
+                _permissionState.value = PermissionState.GRANTED
+                permissionCallback?.invoke(PermissionState.GRANTED)
+            }
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                if (Environment.isExternalStorageManager()) {
-                    callback(true)
-                } else {
-                    requestAllFilesAccessPermission()
-                }
+                _permissionState.value = PermissionState.REQUIRES_MANAGEMENT_ALL
+                permissionCallback?.invoke(PermissionState.REQUIRES_MANAGEMENT_ALL)
             }
-            // For Android 10 and below
+            shouldShowRationale() -> {
+                _permissionState.value = PermissionState.DENIED
+                permissionCallback?.invoke(PermissionState.DENIED)
+            }
             else -> {
-                val permissionsToRequest = STORAGE_PERMISSIONS.filter {
-                    ContextCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
-                }.toTypedArray()
-
-                when {
-                    permissionsToRequest.isEmpty() -> callback(true)
-                    shouldShowRequestRationale(permissionsToRequest) -> showPermissionRationale(permissionsToRequest)
-                    else -> requestPermissions(permissionsToRequest)
-                }
+                _permissionState.value = PermissionState.PERMANENTLY_DENIED
+                permissionCallback?.invoke(PermissionState.PERMANENTLY_DENIED)
             }
         }
     }
 
-    private fun shouldShowRequestRationale(permissions: Array<String>): Boolean {
-        return permissions.any { permission ->
-            ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+    fun requestPermissions(callback: (PermissionState) -> Unit) {
+        permissionCallback = callback
+
+        when {
+            hasAllPermissions() -> {
+                callback(PermissionState.GRANTED)
+                return
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                requestManageAllFilesPermission()
+            }
+            else -> {
+                requestBasicPermissions()
+            }
         }
     }
 
-    private fun showPermissionRationale(permissions: Array<String>) {
-        // Show a dialog explaining why we need permissions
-        android.app.AlertDialog.Builder(activity)
-            .setTitle(R.string.permissions_required)
-            .setMessage(R.string.permission_rationale_message)
-            .setPositiveButton(R.string.grant_permissions) { _, _ ->
-                requestPermissions(permissions)
-            }
-            .setNegativeButton(R.string.cancel) { _, _ ->
-                permissionCallback?.invoke(false)
-            }
-            .show()
-    }
-
-    private fun requestAllFilesAccessPermission() {
+    private fun requestManageAllFilesPermission() {
         try {
             val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                addCategory("android.intent.category.DEFAULT")
                 data = Uri.parse("package:${activity.packageName}")
             }
-            activity.startActivity(intent)
+            settingsLauncher.launch(intent)
         } catch (e: Exception) {
-            // Fallback for devices that don't support the direct permission screen
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            activity.startActivity(intent)
+            try {
+                // Fallback for some devices
+                val intent = Intent().apply {
+                    action = Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+                    data = Uri.parse("package:${activity.packageName}")
+                }
+                settingsLauncher.launch(intent)
+            } catch (e: Exception) {
+                // Final fallback - open general settings
+                val intent = Intent(Settings.ACTION_SETTINGS)
+                settingsLauncher.launch(intent)
+            }
         }
     }
 
-    private fun requestPermissions(permissions: Array<String>) {
-        ActivityCompat.requestPermissions(
-            activity,
-            permissions,
-            PERMISSION_REQUEST_CODE
-        )
+    private fun requestBasicPermissions() {
+        permissionLauncher.launch(REQUIRED_PERMISSIONS)
     }
 
-    fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-            permissionCallback?.invoke(allGranted)
+    private fun handlePermissionResult(permissions: Map<String, Boolean>) {
+        when {
+            permissions.all { it.value } -> {
+                _permissionState.value = PermissionState.GRANTED
+                permissionCallback?.invoke(PermissionState.GRANTED)
+            }
+            shouldShowRationale() -> {
+                _permissionState.value = PermissionState.DENIED
+                permissionCallback?.invoke(PermissionState.DENIED)
+            }
+            else -> {
+                _permissionState.value = PermissionState.PERMANENTLY_DENIED
+                permissionCallback?.invoke(PermissionState.PERMANENTLY_DENIED)
+            }
         }
     }
 
-    fun hasRequiredPermissions(): Boolean {
+    fun hasAllPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
         } else {
-            STORAGE_PERMISSIONS.all { permission ->
+            REQUIRED_PERMISSIONS.all { permission ->
                 ContextCompat.checkSelfPermission(activity, permission) == 
                     PackageManager.PERMISSION_GRANTED
             }
         }
+    }
+
+    private fun shouldShowRationale(): Boolean {
+        return REQUIRED_PERMISSIONS.any { permission ->
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        }
+    }
+
+    fun openSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", activity.packageName, null)
+        }
+        settingsLauncher.launch(intent)
+    }
+
+    companion object {
+        private val REQUIRED_PERMISSIONS = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
     }
 }
