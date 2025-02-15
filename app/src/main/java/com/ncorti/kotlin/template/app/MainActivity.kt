@@ -35,8 +35,12 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         checkAndUpdateServiceState()
-    }
+  }
 
+    override fun onDestroy() {
+         super.onDestroy()
+         // Clean up any observers if needed
+   }
     private fun initializeViews() {
         statusText = findViewById(R.id.statusText)
         startButton = findViewById(R.id.startButton)
