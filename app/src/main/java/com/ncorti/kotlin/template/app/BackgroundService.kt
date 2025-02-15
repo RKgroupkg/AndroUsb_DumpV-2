@@ -229,7 +229,7 @@ class BackgroundService : Service() {
                     val fileSystem = partition.fileSystem
                     val root = fileSystem.rootDirectory
                     scanAndCopyFiles(root, destinationDir, device.deviceName)
-                    notifyTransferComplete(device.deviceName, destinationDir)
+                    notifyTransferComplete()
                 } catch (e: Exception) {
                     logError("File system access failed", e)
                     throw e
