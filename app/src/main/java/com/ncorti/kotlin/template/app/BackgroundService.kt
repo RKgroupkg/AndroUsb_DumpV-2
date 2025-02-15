@@ -131,17 +131,28 @@ class BackgroundService : Service() {
 
     private fun initializeService() {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && 
+               !Environment.isExternalStorageManager()) {
+               throw SecurityException("MANAGE_EXTERNAL_STORAGE permission not granted")
+           }
+
             usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
             notificationHelper = NotificationHelper(this)
+        
+            // Create notification channel before starting foreground
+            notificationHelper.createNotificationChannel()
+        
+            val notification = notificationHelper.createForegroundNotification()
+            startForeground(NotificationHelper.NOTIFICATION_ID, notification)
+        
             registerUsbReceiver()
-            startForeground(NotificationHelper.NOTIFICATION_ID, notificationHelper.createForegroundNotification())
             checkForAlreadyConnectedDevices()
-            logEvent("Service initialized")
-        } catch (e: Exception) {
-            logError("Service initialization failed", e)
-            stopSelf()
-        }
-    }
+            logEvent("Service initialized successfully")
+    }   catch (e: Exception) {
+             logError("Service initialization failed", e)
+             stopSelf()
+         }
+ }
 
     private fun createWakeLock(): PowerManager.WakeLock {
         return (getSystemService(POWER_SERVICE) as PowerManager).run {
