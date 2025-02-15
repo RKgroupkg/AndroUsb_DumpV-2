@@ -159,8 +159,14 @@ class PermissionHandler(
         }
         settingsLauncher.launch(intent)
     }
+    private fun handleError(e: Exception) {
+        Log.e(TAG, "Permission error: ${e.message}", e)
+        _permissionState.value = PermissionState.PERMANENTLY_DENIED
+        permissionCallback?.invoke(PermissionState.PERMANENTLY_DENIED)
+      }
 
     companion object {
+        private const val TAG = "PermissionHandler"
         private val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
