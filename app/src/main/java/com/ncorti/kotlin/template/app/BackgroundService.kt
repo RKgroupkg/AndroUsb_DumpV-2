@@ -1,4 +1,3 @@
-
 package com.ncorti.kotlin.template.app
 
 import android.app.*
@@ -7,13 +6,8 @@ import android.hardware.usb.*
 import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.work.BackoffPolicy
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
-import androidx.work.workDataOf
+import androidx.core.content.ContextCompat
+import androidx.work.*
 import me.jahnen.libaums.core.UsbMassStorageDevice
 import me.jahnen.libaums.core.fs.UsbFile
 import me.jahnen.libaums.core.fs.UsbFileInputStream
@@ -24,6 +18,10 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+
+
+
+
 
 /**
  * BackgroundService handles USB mass storage device connections and file transfers.
