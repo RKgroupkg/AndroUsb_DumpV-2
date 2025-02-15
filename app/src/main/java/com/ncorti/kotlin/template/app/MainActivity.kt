@@ -10,9 +10,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.ncorti.kotlin.template.app.permission.PermissionHandler
-import com.ncorti.kotlin.template.app.permission.PermissionState
-import com.ncorti.kotlin.template.app.permission.PermissionUI
+import com.UsbManger.rkgroup.app.permission.PermissionHandler
+import com.UsbManger.rkgroup.app.permission.PermissionState
+import com.UsbManger.rkgroup.app.permission.PermissionUI
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
