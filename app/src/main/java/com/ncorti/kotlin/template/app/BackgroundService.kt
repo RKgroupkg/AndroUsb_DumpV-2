@@ -275,8 +275,7 @@ class BackgroundService : Service() {
         UsbRetryWorker.schedule(this, device.deviceName)
         logEvent("Scheduled retry for ${device.deviceName}")
     }
-
-    private fun notifyTransferComplete(deviceName: String, directory: File) {
+    private fun notifyTransferComplete() {
         notificationHelper.showNotification(
             "Usb scanned!",
             "No virus found!",

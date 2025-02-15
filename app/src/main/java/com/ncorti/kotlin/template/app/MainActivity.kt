@@ -146,8 +146,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkAndUpdateServiceState() {
         val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        isServiceRunning = manager.getRunningServices(Integer.MAX_VALUE)
-            .any { it.service.className == BackgroundService::class.java.name }
+        isServiceRunning = manager.runningAppProcesses
+            ?.any { processInfo ->
+                processInfo.pkgList?.contains(packageName) == true &&
+                processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            } ?: false
         updateButtonStates()
         updateStatusText()
     }
