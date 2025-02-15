@@ -135,7 +135,7 @@ class PermissionHandler(
             }
         }
     }
-
+    
     fun hasAllPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
@@ -146,19 +146,26 @@ class PermissionHandler(
             }
         }
     }
-
+    
     private fun shouldShowRationale(): Boolean {
         return REQUIRED_PERMISSIONS.any { permission ->
             ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
         }
     }
-
+    
     fun openSettings() {
         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts("package", activity.packageName, null)
         }
         settingsLauncher.launch(intent)
     }
+    private fun shouldShowRationale(): Boolean {
+        return REQUIRED_PERMISSIONS.any { permission ->
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        }
+    }
+
+    
     private fun handleError(e: Exception) {
         Log.e(TAG, "Permission error: ${e.message}", e)
         _permissionState.value = PermissionState.PERMANENTLY_DENIED

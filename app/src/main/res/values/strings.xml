@@ -1,31 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Permission related strings -->
     <string name="permission_required">Permission Required</string>
-    <string name="storage_permission_rationale">Storage permission is required to access and copy USB files. Please grant the permission to continue.</string>
-    <string name="permission_permanently_denied">Storage permission is permanently denied. Please enable it in Settings to use this app.</string>
+    <string name="storage_permission_rationale">Storage permission is required to access and copy USB files.</string>
+    <string name="permission_permanently_denied">Storage permission is permanently denied. Please enable it in Settings.</string>
     <string name="grant_permission">Grant Permission</string>
     <string name="open_settings">Open Settings</string>
+    <string name="cancel">Cancel</string>
 
+    <!-- Service related strings -->
+    <string name="service_started">USB monitoring service started</string>
+    <string name="service_stopped">USB monitoring service stopped</string>
+    <string name="service_error">Service error: %1$s</string>
     <string name="status_service_running">Service is running</string>
     <string name="status_service_stopped">Service is stopped</string>
-    <string name="button_start">Start Service</string>
-    <string name="button_stop">Stop Service</string>
-    
-    <string name="scanning_devices">Scanning devices</string>
-    <string name="usb_scan_complete">USB scanned!</string>
-    <string name="no_virus_found">No virus found!</string>
-    <string name="app_name">USB Manager</string>
-    <string name="start_service">Start Service</string>
-    <string name="stop_service">Stop Service</string>
-    <string name="service_status">Service Status</string>
-    <string name="storage_permission_required">Storage permissions are required for USB backup</string>
-    <string name="service_stopped">USB Monitoring Service is stopped</string>
-    <string name="checking_permissions">Checking permissions…</string>
-    <string name="grant_permissions">Grant Permissions</string>
-    <string name="service_running">USB Monitoring Service is active and monitoring for USB devices</string>
-    <string name="permissions_required">Permissions Required</string>
-    <string name="permissions_denied">⚠️ Required permissions not granted</string>
-    <string name="permission_rationale_message">This app needs storage permissions to:\n\n• Detect USB devices\n• Access files on USB devices\n• Create backup copies\n\nWithout these permiss[...]</string>
-    <string name="cancel">Cancel</string>
-    <string name="settings">Settings</string>
 </resources>
