@@ -1,8 +1,9 @@
-package com.ncorti.kotlin.template.app.permission
+package com.UsbManger.rkgroup.app.permission
 
 import android.app.AlertDialog
 import android.content.Context
-import com.ncorti.kotlin.template.app.R
+import com.UsbManger.rkgroup.app.R
+
 
 object PermissionUI {
     fun showPermissionRationaleDialog(

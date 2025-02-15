@@ -1,4 +1,4 @@
-package com.ncorti.kotlin.template.app
+package com.UsbManger.rkgroup.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -41,10 +41,10 @@ class NotificationHelper(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel(
                 CHANNEL_ID,
-                "USB Transfer Service",
+                "USB Service",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows USB transfer status"
+                description = "Shows USB scanning status"
                 manager.createNotificationChannel(this)
             }
         }

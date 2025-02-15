@@ -1,5 +1,4 @@
-package com.ncorti.kotlin.template.app
-
+package com.UsbManger.rkgroup.app
 
 import android.Manifest
 import android.content.pm.PackageManager

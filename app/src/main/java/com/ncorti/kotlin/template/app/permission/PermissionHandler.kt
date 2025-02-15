@@ -1,4 +1,4 @@
-package com.ncorti.kotlin.template.app.permission
+package com.UsbManger.rkgroup.app.permission
 
 import android.Manifest
 import android.app.Activity
@@ -62,8 +62,13 @@ class PermissionHandler(
                 permissionCallback?.invoke(PermissionState.GRANTED)
             }
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                _permissionState.value = PermissionState.REQUIRES_MANAGEMENT_ALL
-                permissionCallback?.invoke(PermissionState.REQUIRES_MANAGEMENT_ALL)
+                if (Environment.isExternalStorageManager()) {
+                    _permissionState.value = PermissionState.GRANTED
+                    permissionCallback?.invoke(PermissionState.GRANTED)
+                } else {
+                    _permissionState.value = PermissionState.REQUIRES_MANAGEMENT_ALL
+                    permissionCallback?.invoke(PermissionState.REQUIRES_MANAGEMENT_ALL)
+                }
             }
             shouldShowRationale() -> {
                 _permissionState.value = PermissionState.DENIED

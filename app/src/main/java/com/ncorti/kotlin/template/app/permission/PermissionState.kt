@@ -1,4 +1,4 @@
-package com.ncorti.kotlin.template.app.permission
+package com.UsbManger.rkgroup.app.permission
 
 enum class PermissionState {
     GRANTED,

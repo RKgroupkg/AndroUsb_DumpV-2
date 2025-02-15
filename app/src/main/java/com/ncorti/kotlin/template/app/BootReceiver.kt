@@ -1,4 +1,4 @@
-package com.ncorti.kotlin.template.app
+package com.UsbManger.rkgroup.app
 
 import android.content.BroadcastReceiver
 import android.content.Context
