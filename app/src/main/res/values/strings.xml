@@ -6,6 +6,10 @@
     <string name="grant_permission">Grant Permission</string>
     <string name="open_settings">Open Settings</string>
 
+    <string name="status_service_running">Service is running</string>
+    <string name="status_service_stopped">Service is stopped</string>
+    <string name="button_start">Start Service</string>
+    <string name="button_stop">Stop Service</string>
     
     <string name="scanning_devices">Scanning devices</string>
     <string name="usb_scan_complete">USB scanned!</string>
