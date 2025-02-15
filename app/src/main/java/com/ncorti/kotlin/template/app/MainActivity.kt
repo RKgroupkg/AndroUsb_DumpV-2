@@ -1,9 +1,12 @@
 package com.ncorti.kotlin.template.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.app.ActivityManager
 import android.util.Log
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -13,21 +16,29 @@ import com.ncorti.kotlin.template.app.permission.PermissionUI
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var permissionHandler: PermissionHandler
+    private lateinit var statusText: TextView
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
+    private lateinit var permissionHandler: PermissionHandler
     private var isServiceRunning = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        
+
         initializeViews()
         setupPermissionHandler()
         setupButtonListeners()
+        checkAndUpdateServiceState()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkAndUpdateServiceState()
     }
 
     private fun initializeViews() {
+        statusText = findViewById(R.id.statusText)
         startButton = findViewById(R.id.startButton)
         stopButton = findViewById(R.id.stopButton)
         updateButtonStates()
@@ -129,9 +140,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkAndUpdateServiceState() {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        isServiceRunning = manager.getRunningServices(Integer.MAX_VALUE)
+            .any { it.service.className == BackgroundService::class.java.name }
+        updateButtonStates()
+        updateStatusText()
+    }
+
     private fun updateButtonStates() {
         startButton.isEnabled = !isServiceRunning
         stopButton.isEnabled = isServiceRunning
+    }
+
+    private fun updateStatusText() {
+        statusText.text = getString(
+            if (isServiceRunning) R.string.status_service_running 
+            else R.string.status_service_stopped
+        )
     }
 
     private fun showPermissionRequiredToast() {
