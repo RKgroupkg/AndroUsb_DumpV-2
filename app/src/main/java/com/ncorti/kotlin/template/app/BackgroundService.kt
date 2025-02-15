@@ -19,20 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-
-
-
-
-/**
- * BackgroundService handles USB mass storage device connections and file transfers.
- * It runs as a foreground service and manages:
- * - USB device detection and permissions
- * - File copying from USB devices
- * - Error handling and retries
- * - Notifications for transfer status
- */
-// Previous imports remain the same...
-
 class BackgroundService : Service() {
     private lateinit var usbManager: UsbManager
     private lateinit var notificationHelper: NotificationHelper
@@ -65,8 +51,6 @@ class BackgroundService : Service() {
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         return File(baseDir, "${dateStr}_usb_service_log.txt")
     }
-
-    // Rest of the original code remains the same until the copyFileWithChecks function
 
     private fun copyFileWithChecks(sourceFile: UsbFile, destDir: File, deviceName: String) {
         val targetFile = File(destDir, sourceFile.name)
@@ -111,7 +95,6 @@ class BackgroundService : Service() {
         }
     }
 
-    
     private val usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
@@ -130,8 +113,8 @@ class BackgroundService : Service() {
     private fun initializeService() {
         try {
             if (!hasRequiredPermissions()) {
-               throw SecurityException("Required permissions not granted")
-        }
+                throw SecurityException("Required permissions not granted")
+            }
 
             usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
             notificationHelper = NotificationHelper(this)
@@ -145,19 +128,20 @@ class BackgroundService : Service() {
             registerUsbReceiver()
             checkForAlreadyConnectedDevices()
             logEvent("Service initialized successfully")
-    }   catch (e: Exception) {
-             logError("Service initialization failed", e)
-             stopSelf()
-         }
- }
+        } catch (e: Exception) {
+            logError("Service initialization failed", e)
+            stopSelf()
+        }
+    }
+
     private fun hasRequiredPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-             Environment.isExternalStorageManager()
-      } else {
-             ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == 
-                 PackageManager.PERMISSION_GRANTED
-          }
-       }
+            Environment.isExternalStorageManager()
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == 
+                PackageManager.PERMISSION_GRANTED
+        }
+    }
 
     private fun createWakeLock(): PowerManager.WakeLock {
         return (getSystemService(POWER_SERVICE) as PowerManager).run {
@@ -167,7 +151,6 @@ class BackgroundService : Service() {
         }
     }
 
-    // Modified USB event handlers with better error handling
     private fun handleUsbPermission(intent: Intent) {
         val device = getUsbDevice(intent)
         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
@@ -220,7 +203,7 @@ class BackgroundService : Service() {
         if (storageDevices.isEmpty()) {
             throw IOException("No mass storage devices found")
         }
-    
+
         storageDevices.forEach { massStorage ->
             try {
                 // New error handling for init
@@ -230,13 +213,13 @@ class BackgroundService : Service() {
                     logError("Failed to initialize mass storage device", e)
                     return@forEach
                 }
-    
+
                 // More specific partition check
                 if (massStorage.partitions.isEmpty()) {
                     logEvent("No partitions found on ${device.deviceName}")
                     return@forEach
                 }
-    
+
                 val partition = massStorage.partitions[0]
                 try {
                     val fileSystem = partition.fileSystem
@@ -259,8 +242,6 @@ class BackgroundService : Service() {
         }
     }
 
-
-    // Enhanced file copy with progress checks
     private fun scanAndCopyFiles(root: UsbFile, destinationDir: File, deviceName: String) {
         val queue = ArrayDeque<UsbFile>().apply { push(root) }
         var filesCopied = 0
@@ -286,8 +267,6 @@ class BackgroundService : Service() {
         logEvent("Copied $filesCopied files from ${root.name}")
     }
 
-    
-    // Improved retry mechanism with exponential backoff
     private fun scheduleRetry(device: UsbDevice) {
         UsbRetryWorker.schedule(this, device.deviceName)
         logEvent("Scheduled retry for ${device.deviceName}")
@@ -300,9 +279,6 @@ class BackgroundService : Service() {
             NotificationHelper.COMPLETION_ID
         )
     }
-
-    
-    // Add these functions to your BackgroundService class
 
     private fun registerUsbReceiver() {
         val filter = IntentFilter().apply {
@@ -417,7 +393,6 @@ class BackgroundService : Service() {
         if (wakeLock.isHeld) wakeLock.release()
     }
 
-    // Modified notification helper
     class NotificationHelper(context: Context) {
         companion object {
             const val CHANNEL_ID = "UsbServiceChannel"
@@ -425,7 +400,6 @@ class BackgroundService : Service() {
             const val COMPLETION_ID = 2
         }
 
-        
         private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         private val builder = NotificationCompat.Builder(context, CHANNEL_ID)
 
@@ -449,7 +423,7 @@ class BackgroundService : Service() {
                 .build())
         }
 
-        private fun createNotificationChannel() {
+        fun createNotificationChannel() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel(
                     CHANNEL_ID,
@@ -463,7 +437,6 @@ class BackgroundService : Service() {
         }
     }
 
-    // Updated WorkManager implementation
     class UsbRetryWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
         override suspend fun doWork(): Result {
             val deviceName = inputData.getString("device_name") ?: return Result.failure()

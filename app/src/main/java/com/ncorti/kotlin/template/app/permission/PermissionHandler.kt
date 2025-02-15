@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -159,18 +160,12 @@ class PermissionHandler(
         }
         settingsLauncher.launch(intent)
     }
-    private fun shouldShowRationale(): Boolean {
-        return REQUIRED_PERMISSIONS.any { permission ->
-            ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
-        }
-    }
 
-    
     private fun handleError(e: Exception) {
         Log.e(TAG, "Permission error: ${e.message}", e)
         _permissionState.value = PermissionState.PERMANENTLY_DENIED
         permissionCallback?.invoke(PermissionState.PERMANENTLY_DENIED)
-      }
+    }
 
     companion object {
         private const val TAG = "PermissionHandler"
